@@ -1,0 +1,98 @@
+.form-page {
+  display: grid;
+  gap: 14px;
+}
+
+.back-link {
+  justify-self: start;
+}
+
+.form-card {
+  display: grid;
+  gap: 22px;
+  width: min(100%, 860px);
+  padding: 28px;
+  border: 1px solid rgba(75, 61, 48, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(75, 61, 48, 0.08);
+
+  h1 {
+    margin: 0;
+    color: var(--text);
+    font-size: 30px;
+  }
+}
+
+.center-state {
+  display: grid;
+  min-height: 240px;
+  place-items: center;
+}
+
+form {
+  display: grid;
+  gap: 16px;
+}
+
+.grid {
+  display: grid;
+  gap: 14px;
+}
+
+.two {
+  grid-template-columns: 1fr 1fr;
+}
+
+.three {
+  grid-template-columns: 150px 150px 1fr;
+}
+
+.file-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 0 16px;
+  border: 1px dashed rgba(75, 61, 48, 0.32);
+  border-radius: 12px;
+  color: var(--muted-text);
+  cursor: pointer;
+
+  input {
+    display: none;
+  }
+
+  mat-icon {
+    color: var(--accent);
+  }
+}
+
+.photo-preview {
+  width: 180px;
+  height: 130px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 760px) {
+  .form-card {
+    padding: 20px;
+  }
+
+  .two,
+  .three {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+}

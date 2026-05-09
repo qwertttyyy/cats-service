@@ -1,0 +1,34 @@
+@import '@angular/material/prebuilt-themes/rose-red.css';
+
+:root {
+  --page-bg: #fff8f0;
+  --text: #312820;
+  --muted-text: #7d6e61;
+  --accent: #c66d49;
+  --green: #528b76;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--page-bg);
+  color: var(--text);
+  font-family: Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+.mat-mdc-snack-bar-container {
+  --mdc-snackbar-container-color: #312820;
+  --mat-snack-bar-button-color: #ffd8c2;
+}
