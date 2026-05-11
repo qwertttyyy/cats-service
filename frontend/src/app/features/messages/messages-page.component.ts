@@ -15,7 +15,11 @@ import { extractApiError } from '../../core/api/api-error';
 import { BreedersApiService } from '../../core/api/breeders-api.service';
 import { MessagingApiService } from '../../core/api/messaging-api.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { ChatMessage, WsIncomingEvent } from '../../core/models/messaging.model';
+import {
+  ChatMessage,
+  MessageUser,
+  WsIncomingEvent,
+} from '../../core/models/messaging.model';
 import { Breeder, User } from '../../core/models/user.model';
 import { WebSocketService } from '../../core/websocket/websocket.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
@@ -99,12 +103,23 @@ const MESSAGES_LIMIT = 50;
             </div>
           </header>
 
-          <div class="messages-list" #messagesList>
-            @if (messagesLoading()) {
+          <div
+            class="messages-list"
+            #messagesList
+            (scroll)="onMessagesScroll($event)"
+          >
+            @if (messagesLoading() && selectedMessages().length === 0) {
               <div class="center-state"><mat-spinner diameter="36" /></div>
             } @else if (selectedMessages().length === 0) {
-              <app-empty-state icon="chat_bubble_outline" title="Сообщений пока нет" description="Напишите первым." />
+              <app-empty-state
+                icon="chat_bubble_outline"
+                title="Сообщений пока нет"
+                description="Напишите первым."
+              />
             } @else {
+              @if (olderMessagesLoading()) {
+                <div class="history-loader"><mat-spinner diameter="24" /></div>
+              }
               @for (message of selectedMessages(); track message.id) {
                 <div class="message-row" [class.mine]="isMine(message)">
                   <div class="message-bubble">
@@ -142,7 +157,7 @@ const MESSAGES_LIMIT = 50;
           <app-empty-state
             icon="forum"
             title="Выберите заводчика, чтобы начать диалог"
-            description="Сообщения доставляются через WebSocket, история хранится в MongoDB backend."
+            description="Сообщения доставляются через WebSocket, история хранится в backend."
           />
         }
       </section>
@@ -170,12 +185,16 @@ export class MessagesPageComponent implements OnDestroy {
   readonly selectedBreeder = signal<Breeder | null>(null);
   readonly breedersLoading = signal(false);
   readonly messagesLoading = signal(false);
+  readonly olderMessagesLoading = signal(false);
   readonly socketConnected = signal(false);
 
   private breedersOffset = 0;
   private breedersCount = 0;
   private breedersRequestId = 0;
+  private messagesRequestId = 0;
+  private olderMessagesRequestId = 0;
   private readonly messagesByParticipant = signal(new Map<string, ChatMessage[]>());
+  private readonly messagesCountByParticipant = signal(new Map<string, number>());
   private readonly unreadByParticipant = signal(new Map<string, number>());
 
   readonly selectedMessages = computed(() => {
@@ -215,10 +234,18 @@ export class MessagesPageComponent implements OnDestroy {
 
   onBreedersScroll(event: Event): void {
     const element = event.target as HTMLElement;
-    const nearBottom = element.scrollTop + element.clientHeight >= element.scrollHeight - 120;
+    const nearBottom =
+      element.scrollTop + element.clientHeight >= element.scrollHeight - 120;
     const hasMore = this.breeders().length < this.breedersCount;
     if (nearBottom && hasMore && !this.breedersLoading()) {
       this.loadBreeders(false);
+    }
+  }
+
+  onMessagesScroll(event: Event): void {
+    const element = event.target as HTMLElement;
+    if (element.scrollTop <= 120) {
+      this.loadOlderMessages();
     }
   }
 
@@ -328,27 +355,103 @@ export class MessagesPageComponent implements OnDestroy {
           this.breedersOffset = updatedBreeders.length;
         },
         error: (error: unknown) => {
-          this.snackBar.open(extractApiError(error), 'Закрыть', { duration: 4500 });
+          this.snackBar.open(extractApiError(error), 'Закрыть', {
+            duration: 4500,
+          });
         },
       });
   }
 
   private loadHistory(breeder: Breeder): void {
+    const requestId = ++this.messagesRequestId;
+    this.olderMessagesLoading.set(false);
     this.messagesLoading.set(true);
+
     this.messagingApi.getMessages(breeder.public_id, MESSAGES_LIMIT, 0)
       .pipe(
         finalize(() => {
-          this.messagesLoading.set(false);
-          this.scrollMessagesToBottom();
+          if (requestId === this.messagesRequestId) {
+            this.messagesLoading.set(false);
+          }
         }),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
         next: (response) => {
+          if (requestId !== this.messagesRequestId) {
+            return;
+          }
+
           this.setParticipantMessages(breeder.public_id, response.results);
+          this.setMessagesCount(breeder.public_id, response.count);
+          this.scrollMessagesToBottom();
         },
         error: (error: unknown) => {
           this.snackBar.open(extractApiError(error), 'Закрыть', { duration: 4500 });
+        },
+      });
+  }
+
+  private loadOlderMessages(): void {
+    const breeder = this.selectedBreeder();
+    if (!breeder || this.messagesLoading() || this.olderMessagesLoading()) {
+      return;
+    }
+
+    const participantId = breeder.public_id;
+    const existing = this.messagesByParticipant().get(participantId) ?? [];
+    const total = this.messagesCountByParticipant().get(participantId) ?? 0;
+    if (existing.length === 0 || existing.length >= total) {
+      return;
+    }
+
+    const element = this.messagesList?.nativeElement;
+    const previousScrollHeight = element?.scrollHeight ?? 0;
+    const previousScrollTop = element?.scrollTop ?? 0;
+    const requestId = ++this.olderMessagesRequestId;
+    this.olderMessagesLoading.set(true);
+
+    this.messagingApi
+      .getMessages(participantId, MESSAGES_LIMIT, existing.length)
+      .pipe(
+        finalize(() => {
+          if (requestId === this.olderMessagesRequestId) {
+            this.olderMessagesLoading.set(false);
+          }
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (response) => {
+          const current = this.messagesByParticipant().get(participantId) ?? [];
+          const knownIds = new Set(current.map((message) => message.id));
+          const olderMessages = response.results.filter(
+            (message) => !knownIds.has(message.id),
+          );
+          if (olderMessages.length === 0) {
+            this.setMessagesCount(
+              participantId,
+              Math.max(response.count, current.length),
+            );
+            return;
+          }
+
+          const mergedMessages = [...olderMessages, ...current];
+          this.setParticipantMessages(participantId, mergedMessages);
+          this.setMessagesCount(
+            participantId,
+            Math.max(response.count, mergedMessages.length),
+          );
+          this.restoreMessagesScroll(
+            previousScrollHeight,
+            previousScrollTop,
+            participantId,
+          );
+        },
+        error: (error: unknown) => {
+          this.snackBar.open(extractApiError(error), 'Закрыть', {
+            duration: 4500,
+          });
         },
       });
   }
@@ -371,6 +474,7 @@ export class MessagesPageComponent implements OnDestroy {
     this.addBreederIfMissing(participant);
     const existing = this.messagesByParticipant().get(participant.public_id) ?? [];
     if (!existing.some((message) => message.id === event.message.id)) {
+      this.incrementMessagesCount(participant.public_id);
       this.setParticipantMessages(participant.public_id, [...existing, event.message]);
     }
 
@@ -383,13 +487,16 @@ export class MessagesPageComponent implements OnDestroy {
     }
   }
 
-  private addBreederIfMissing(user: User): void {
+  private addBreederIfMissing(user: MessageUser): void {
     if (this.auth.currentUser?.public_id === user.public_id) {
       return;
     }
 
     if (!this.breeders().some((breeder) => breeder.public_id === user.public_id)) {
-      this.breeders.update((breeders) => [user, ...breeders]);
+      this.breeders.update((breeders) => [
+        { ...user, date_joined: '' },
+        ...breeders,
+      ]);
       this.breedersCount += 1;
     }
   }
@@ -398,6 +505,23 @@ export class MessagesPageComponent implements OnDestroy {
     this.messagesByParticipant.update((current) => {
       const next = new Map(current);
       next.set(participantId, messages);
+      return next;
+    });
+  }
+
+  private setMessagesCount(participantId: string, count: number): void {
+    this.messagesCountByParticipant.update((current) => {
+      const next = new Map(current);
+      next.set(participantId, count);
+      return next;
+    });
+  }
+
+  private incrementMessagesCount(participantId: string): void {
+    const loadedCount = this.messagesByParticipant().get(participantId)?.length ?? 0;
+    this.messagesCountByParticipant.update((current) => {
+      const next = new Map(current);
+      next.set(participantId, (next.get(participantId) ?? loadedCount) + 1);
       return next;
     });
   }
@@ -415,6 +539,23 @@ export class MessagesPageComponent implements OnDestroy {
       const element = this.messagesList?.nativeElement;
       if (element) {
         element.scrollTop = element.scrollHeight;
+      }
+    });
+  }
+
+  private restoreMessagesScroll(
+    previousScrollHeight: number,
+    previousScrollTop: number,
+    participantId: string,
+  ): void {
+    setTimeout(() => {
+      if (this.selectedBreeder()?.public_id !== participantId) {
+        return;
+      }
+
+      const element = this.messagesList?.nativeElement;
+      if (element) {
+        element.scrollTop = element.scrollHeight - previousScrollHeight + previousScrollTop;
       }
     });
   }

@@ -9,7 +9,7 @@ Cats Service - проект для заводчиков кошек.
 - Backend: Python, Django, Django REST Framework, Django Channels
 - Frontend: Angular, Angular Material
 - База данных: MySQL
-- Чаты: MongoDB для истории сообщений, Redis для WebSocket/Channels
+- Чаты: MySQL для истории сообщений, Redis для WebSocket/Channels
 - Авторизация: JWT
 - Документация API: OpenAPI, Swagger UI, ReDoc
 - Инфраструктура: Docker Compose, Nginx, Daphne
@@ -89,7 +89,7 @@ uv run python manage.py test
 uv run ruff check .
 ```
 
-Для полноценной работы чатов нужны Redis и MongoDB. Проще всего поднимать их через Docker Compose.
+Для полноценной realtime-доставки сообщений нужен Redis. Проще всего поднимать его через Docker Compose.
 
 ## Локальная разработка frontend
 
@@ -149,4 +149,4 @@ deploy/nginx-external.example.conf
 
 ## Данные
 
-Данные MySQL, MongoDB, Redis, media и static хранятся в Docker volumes.
+Данные MySQL, Redis, media и static хранятся в Docker volumes.

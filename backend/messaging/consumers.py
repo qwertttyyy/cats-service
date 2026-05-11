@@ -5,7 +5,7 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
-from messaging.mongo import create_message
+from messaging.services import create_message
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -13,7 +13,7 @@ User = get_user_model()
 
 class MessageConsumer(AsyncJsonWebsocketConsumer):
     """
-    WebSocket consumer для приватных сообщений с историей в MongoDB.
+    WebSocket consumer для приватных сообщений с историей в MySQL.
     """
 
     async def connect(self):
@@ -83,10 +83,7 @@ class MessageConsumer(AsyncJsonWebsocketConsumer):
             return
 
         message = await self.create_stored_message(self.user, recipient, text)
-        websocket_message = {
-            **message,
-            "sent_at": message["sent_at"].isoformat(),
-        }
+        websocket_message = dict(message)
         await self.channel_layer.group_send(
             f"user_{recipient.id}",
             {

@@ -6,20 +6,26 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from drf_spectacular.utils import extend_schema_view
 from rest_framework import status
+from rest_framework.generics import ListAPIView
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from messaging.mongo import get_chat_messages, list_user_chats
-from messaging.pagination import get_limit_offset, paginated_response
 from messaging.schemas import (
-    chat_list_schema,
     chat_message_list_schema,
     ws_ticket_schema,
 )
+from messaging.serializers import ChatMessageSerializer
+from messaging.services import get_chat_messages_queryset
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+
+
+class ChatMessageLimitOffsetPagination(LimitOffsetPagination):
+    default_limit = 50
+    max_limit = 100
 
 
 @extend_schema_view(**ws_ticket_schema)
@@ -47,27 +53,13 @@ class WebSocketTicketView(APIView):
         )
 
 
-@extend_schema_view(**chat_list_schema)
-class ChatListView(APIView):
-    """Возвращает список личных чатов текущего пользователя."""
-
-    permission_classes = (IsAuthenticated,)
-
-    def get(self, request):
-        """Отдаёт чаты, отсортированные по времени последнего сообщения."""
-
-        limit, offset = get_limit_offset(request)
-        count, chats = list_user_chats(
-            request.user, limit=limit, offset=offset
-        )
-        return paginated_response(request, count, chats, limit, offset)
-
-
 @extend_schema_view(**chat_message_list_schema)
-class ChatMessageListView(APIView):
+class ChatMessageListView(ListAPIView):
     """Возвращает историю личного чата с выбранным пользователем."""
 
     permission_classes = (IsAuthenticated,)
+    serializer_class = ChatMessageSerializer
+    pagination_class = ChatMessageLimitOffsetPagination
 
     def get(self, request, participant_public_id):
         """
@@ -90,8 +82,20 @@ class ChatMessageListView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        limit, offset = get_limit_offset(request)
-        count, messages = get_chat_messages(
-            request.user, participant, limit=limit, offset=offset
-        )
-        return paginated_response(request, count, messages, limit, offset)
+        self.participant = participant
+        return super().get(request, participant_public_id)
+
+    def get_queryset(self):
+        return get_chat_messages_queryset(
+            self.request.user, self.participant
+        ).order_by("-sent_at", "-id")
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(reversed(page), many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)

@@ -1,7 +1,8 @@
 .messages-page {
   display: grid;
   grid-template-columns: 340px minmax(0, 1fr);
-  min-height: calc(100vh - 136px);
+  height: calc(100dvh - 136px);
+  min-height: 560px;
   overflow: hidden;
   border: 1px solid rgba(75, 61, 48, 0.1);
   border-radius: 16px;
@@ -147,6 +148,7 @@
   grid-template-rows: auto 1fr auto;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
 }
 
 .chat-head {
@@ -189,9 +191,17 @@
   min-height: 0;
   padding: 22px;
   overflow: auto;
+  overscroll-behavior: contain;
   background:
     linear-gradient(rgba(255, 252, 247, 0.74), rgba(255, 252, 247, 0.74)),
     radial-gradient(circle at bottom right, rgba(82, 139, 118, 0.12), transparent 34%);
+}
+
+.history-loader {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 2px 0 8px;
 }
 
 .message-row {
@@ -256,7 +266,8 @@
 @media (max-width: 860px) {
   .messages-page {
     grid-template-columns: 1fr;
-    min-height: auto;
+    height: auto;
+    min-height: 0;
   }
 
   .breeders-panel {
@@ -266,7 +277,8 @@
   }
 
   .chat-panel {
-    min-height: 560px;
+    height: min(680px, calc(100dvh - 96px));
+    min-height: 520px;
   }
 }
 

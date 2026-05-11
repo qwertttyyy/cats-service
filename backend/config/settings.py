@@ -206,7 +206,7 @@ SIMPLE_JWT = {
 SPECTACULAR_SETTINGS = {
     "TITLE": "Cats Service API",
     "DESCRIPTION": (
-        "REST API for cat breeders, MongoDB chat history and WebSocket "
+        "REST API for cat breeders, MySQL chat history and WebSocket "
         "tickets."
     ),
     "VERSION": "1.0.0",
@@ -216,21 +216,6 @@ SPECTACULAR_SETTINGS = {
 WS_TICKET_TTL_SECONDS = env_int("WS_TICKET_TTL_SECONDS", 60)
 MAX_UPLOAD_SIZE_MB = env_int("MAX_UPLOAD_SIZE_MB", 5)
 CHAT_MESSAGE_MAX_LENGTH = env_int("CHAT_MESSAGE_MAX_LENGTH", 2000)
-MONGODB_USERNAME = os.getenv("MONGODB_USERNAME", "")
-MONGODB_PASSWORD = os.getenv("MONGODB_PASSWORD", "")
-MONGODB_HOST = os.getenv("MONGODB_HOST", "mongodb")
-MONGODB_PORT = env_int("MONGODB_PORT", 27017)
-MONGODB_DATABASE = os.getenv("MONGODB_DATABASE", "cats_service")
-if MONGODB_USERNAME and MONGODB_PASSWORD:
-    MONGODB_URI = (
-        f"mongodb://{MONGODB_USERNAME}:{MONGODB_PASSWORD}"
-        f"@{MONGODB_HOST}:{MONGODB_PORT}/{MONGODB_DATABASE}?authSource=admin"
-    )
-else:
-    MONGODB_URI = f"mongodb://{MONGODB_HOST}:{MONGODB_PORT}"
-MONGODB_CHAT_MESSAGES_COLLECTION = os.getenv(
-    "MONGODB_CHAT_MESSAGES_COLLECTION", "chat_messages"
-)
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = env_bool("USE_X_FORWARDED_HOST", True)
