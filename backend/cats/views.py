@@ -57,6 +57,7 @@ class BreederListView(ListAPIView):
         queryset = (
             User.objects.filter(is_active=True)
             .exclude(pk=self.request.user.pk)
+            .exclude(Q(is_superuser=True) | Q(is_staff=True))
             .order_by("-date_joined")
         )
         search = self.request.query_params.get("search", "").strip()
