@@ -51,7 +51,7 @@ class MessageConsumer(AsyncJsonWebsocketConsumer):
 
     async def receive_json(self, content, **kwargs):
         """
-        Валидирует JSON и отправляет сообщение через channel layer.
+        Валидирует и отправляет сообщение.
         """
 
         if content.get("type") != "private_message":
@@ -112,7 +112,7 @@ class MessageConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def chat_message_event(self, event):
-        """Отправляет получателю входящее приватное сообщение."""
+        """Отправляет получателю входящее сообщение."""
 
         message = event["message"]
         await self.send_json(
@@ -123,7 +123,7 @@ class MessageConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def send_error(self, message: str):
-        """Возвращает клиенту безопасное error-событие и пишет его в лог."""
+        """Возвращает клиенту событие об ошибке и логирует."""
 
         logger.info(
             f"Websocket error user_id={getattr(self.user, 'id', None)} "
@@ -142,6 +142,6 @@ class MessageConsumer(AsyncJsonWebsocketConsumer):
 
     @database_sync_to_async
     def create_stored_message(self, sender, recipient, text: str):
-        """Сохраняет сообщение в MongoDB перед realtime-доставкой."""
+        """Сохраняет сообщение перед отправкой."""
 
         return create_message(sender=sender, recipient=recipient, text=text)

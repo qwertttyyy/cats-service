@@ -179,20 +179,6 @@ class CatSerializer(serializers.ModelSerializer):
             return request.build_absolute_uri(url)
         return url
 
-    def validate_name(self, value: str) -> str:
-        value = value.strip()
-        if not value:
-            raise serializers.ValidationError("Имя кота не может быть пустым.")
-        return value
-
-    def validate_breed(self, value: str) -> str:
-        value = value.strip()
-        if not value:
-            raise serializers.ValidationError(
-                "Порода кота не может быть пустой."
-            )
-        return value
-
     def validate_photo(self, value):
         """Ограничивает размер фото значением MAX_UPLOAD_SIZE_MB."""
 

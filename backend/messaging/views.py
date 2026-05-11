@@ -21,9 +21,6 @@ from messaging.schemas import (
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
-DEFAULT_CHAT_PAGE_SIZE = 20
-MAX_CHAT_PAGE_SIZE = 100
-
 
 @extend_schema_view(**ws_ticket_schema)
 class WebSocketTicketView(APIView):
@@ -52,7 +49,7 @@ class WebSocketTicketView(APIView):
 
 @extend_schema_view(**chat_list_schema)
 class ChatListView(APIView):
-    """Возвращает список личных чатов текущего пользователя из MongoDB."""
+    """Возвращает список личных чатов текущего пользователя."""
 
     permission_classes = (IsAuthenticated,)
 

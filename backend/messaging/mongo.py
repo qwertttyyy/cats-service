@@ -34,7 +34,7 @@ def get_messages_collection():
 def build_chat_id(first_public_id: str, second_public_id: str) -> str:
     """Строит стабильный id личного чата из двух public_id пользователей."""
 
-    return ":".join(sorted([str(first_public_id), str(second_public_id)]))
+    return ":".join(sorted((str(first_public_id), str(second_public_id))))
 
 
 def serialize_user_for_chat(user: User) -> dict[str, Any]:
@@ -46,7 +46,7 @@ def serialize_user_for_chat(user: User) -> dict[str, Any]:
 def serialize_message(document: dict[str, Any]) -> dict[str, Any]:
     """Преобразует MongoDB document в JSON payload API/WebSocket."""
 
-    payload = {
+    return {
         "id": str(document["_id"]),
         "chat_id": document["chat_id"],
         "sender": document["sender"],
@@ -54,7 +54,6 @@ def serialize_message(document: dict[str, Any]) -> dict[str, Any]:
         "text": document["text"],
         "sent_at": document["sent_at"],
     }
-    return payload
 
 
 def create_message(sender: User, recipient: User, text: str) -> dict[str, Any]:
@@ -154,7 +153,7 @@ def list_user_chats(
 
 
 def _get_user_payload_by_public_id(public_id: str) -> dict[str, Any] | None:
-    """Достаёт безопасный payload пользователя для summary чата."""
+    """Достаёт payload пользователя для summary чата."""
 
     try:
         user = User.objects.get(public_id=public_id, is_active=True)

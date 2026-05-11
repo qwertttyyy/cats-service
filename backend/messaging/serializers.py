@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 class WebSocketTicketResponseSerializer(serializers.Serializer):
     """
-    Описывает ответ endpoint-а выдачи одноразового WebSocket ticket.
+    Ответ эндпоинта выдачи одноразового WebSocket ticket.
     """
 
     ticket = serializers.CharField(read_only=True)
@@ -11,7 +11,7 @@ class WebSocketTicketResponseSerializer(serializers.Serializer):
 
 
 class ChatMessageSerializer(serializers.Serializer):
-    """Публичное представление сообщения из MongoDB."""
+    """Публичное представление сообщения."""
 
     id = serializers.CharField(read_only=True)
     chat_id = serializers.CharField(read_only=True)

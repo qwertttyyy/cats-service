@@ -18,7 +18,7 @@ class WebSocketTicketAuthMiddleware:
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        """Добавляет в scope пользователя или None до передачи consumer-у."""
+        """Добавляет в scope пользователя или None до передачи консьюмеру."""
 
         scope = dict(scope)
         ticket = self._extract_ticket(scope)
@@ -26,7 +26,7 @@ class WebSocketTicketAuthMiddleware:
         return await self.app(scope, receive, send)
 
     @staticmethod
-    def _extract_ticket(scope) -> str | bytes | None:
+    def _extract_ticket(scope) -> str | None:
         """Достаёт ticket из URL вида /ws/messages/?ticket=..."""
 
         query_string = scope.get("query_string", b"").decode("utf-8")
@@ -35,7 +35,7 @@ class WebSocketTicketAuthMiddleware:
         return tickets[0] if tickets else None
 
     @database_sync_to_async
-    def _authenticate(self, ticket: str | bytes | None):
+    def _authenticate(self, ticket: str | None):
         """
         Проверяет ticket в cache, удаляет его и возвращает пользователя.
         """

@@ -2,7 +2,8 @@ from urllib.parse import urlencode
 
 from rest_framework.response import Response
 
-from messaging.views import DEFAULT_CHAT_PAGE_SIZE, MAX_CHAT_PAGE_SIZE
+DEFAULT_CHAT_PAGE_SIZE = 20
+MAX_CHAT_PAGE_SIZE = 100
 
 
 def get_limit_offset(request) -> tuple[int, int]:
@@ -26,21 +27,21 @@ def paginated_response(
 ) -> Response:
     """Возвращает MongoDB results в формате DRF LimitOffsetPagination."""
 
-    def build_url(new_offset: int) -> str | None:
-        if new_offset < 0 or new_offset >= count:
-            return None
+    def build_url(new_offset: int) -> str:
         params = request.query_params.copy()
         params["limit"] = str(limit)
         params["offset"] = str(new_offset)
         return f"{request.path}?{urlencode(params, doseq=True)}"
 
-    next_offset = offset + limit
-    previous_offset = offset - limit
     return Response(
         {
             "count": count,
-            "next": build_url(next_offset) if next_offset < count else None,
-            "previous": build_url(previous_offset) if offset > 0 else None,
+            "next": (
+                build_url(offset + limit) if offset + limit < count else None
+            ),
+            "previous": (
+                build_url(max(offset - limit, 0)) if offset > 0 else None
+            ),
             "results": results,
         }
     )

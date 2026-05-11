@@ -22,7 +22,7 @@ User = get_user_model()
 
 
 class RegisterView(CreateAPIView):
-    """Публичная регистрация заводчика по username и password."""
+    """Регистрация заводчика по username и password."""
 
     serializer_class = RegisterSerializer
     permission_classes = (AllowAny,)
@@ -36,7 +36,7 @@ class RegisterView(CreateAPIView):
 
 
 class CurrentUserView(RetrieveAPIView):
-    """Возвращает текущего пользователя по JWT без чувствительных полей."""
+    """Возвращает текущего пользователя по JWT."""
 
     serializer_class = UserSerializer
 
@@ -46,7 +46,7 @@ class CurrentUserView(RetrieveAPIView):
 
 class BreederListView(ListAPIView):
     """
-    Список заводчиков для сообщений с поиском и limit/offset пагинацией.
+    Список заводчиков с поиском и limit/offset пагинацией.
     """
 
     serializer_class = UserSerializer
@@ -70,7 +70,7 @@ class BreederListView(ListAPIView):
 
 
 class CoatTypeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    """Read-only endpoint со справочником типов шерсти кошек."""
+    """Возвращает список типов шерсти кошек."""
 
     queryset = CoatType.objects.all()
     serializer_class = CoatTypeSerializer
@@ -78,7 +78,7 @@ class CoatTypeViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
 @extend_schema_view(**cat_view_schema)
 class CatViewSet(viewsets.ModelViewSet):
-    """CRUD по котам текущего пользователя с запретом доступа к чужим UUID."""
+    """CRUD по котам текущего пользователя."""
 
     serializer_class = CatSerializer
     parser_classes = (MultiPartParser, FormParser, JSONParser)
@@ -86,7 +86,7 @@ class CatViewSet(viewsets.ModelViewSet):
     lookup_url_kwarg = "public_id"
 
     def get_queryset(self):
-        """Ограничивает выборку котами владельца из JWT."""
+        """Получает список котов пользователя."""
 
         return (
             Cat.objects.filter(owner_id=self.request.user.pk)
